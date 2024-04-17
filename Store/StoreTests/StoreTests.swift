@@ -66,4 +66,30 @@ TOTAL: $7.97
 """
         XCTAssertEqual(expectedReceipt, receipt.output())
     }
+    
+    func testTwoForOneScheme() {
+        let register = Register()
+        let itemBeans = Item(name: "Beans", priceEach: 199)
+        let pricingScheme = TwoForOne(itemName: "Beans", itemPrice: 199)
+        
+        register.receipt.applyPricingScheme(pricingScheme)
+        
+        register.scan(itemBeans) // Scan 3 times
+        register.scan(itemBeans)
+        register.scan(itemBeans)
+        
+        let output = register.receipt.output()
+        let expectedOutput = """
+        Receipt:
+        Beans (8oz Can): $1.99
+        Beans (8oz Can): $1.99
+        Beans (8oz Can): $1.99
+        ------------------
+        TOTAL: $3.98
+        """
+        
+        XCTAssertEqual(output, expectedOutput, "The receipt output did not match the expected output for 2-for-1 pricing scheme.")
+    }
+    
+    
 }
