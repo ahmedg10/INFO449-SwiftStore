@@ -20,34 +20,31 @@ protocol PricingScheme {
 class TwoForOne: PricingScheme {
     var itemName: String
     var itemPrice: Int
-    
-    init(itemName: String, itemPrice: Int){
+
+    init(itemName: String, itemPrice: Int) {
         self.itemName = itemName
         self.itemPrice = itemPrice
     }
-    
+
     func apply(items: [SKU]) -> Int {
-        // Filter items by the specified name.
-        let filteredItems = items.filter { $0.name == itemName }
-        let countOfFilteredItems = filteredItems.count
-        
-        // Calculate the number of groups of three from the filtered items.
-        let numberOfGroups = countOfFilteredItems / 3
-        let freeItemsCount = numberOfGroups
-        let paidItemsCount = countOfFilteredItems - freeItemsCount
-        
-        // Calculate total cost for items with the special pricing.
-        let totalForSpecialItems = paidItemsCount * itemPrice
-        
-        // Calculate the total for other items that do not qualify for the special pricing.
-        let otherItems = items.filter { $0.name != itemName }
-        let totalForOtherItems = otherItems.reduce(0) { $0 + $1.price() }
-        
-        // Sum the totals for special priced items and other items.
-        return totalForSpecialItems + totalForOtherItems
-        
-    }
+           let filteredItems = items.filter { $0.name == itemName }
+           let countOfFilteredItems = filteredItems.count
+           
+           // Calculate the number of free items. One free item for every three purchased.
+           let numberOfFreeItems = countOfFilteredItems / 3
+           // Calculate number of paid items (you pay for two each time you buy three).
+           let numberOfPaidItems = countOfFilteredItems - numberOfFreeItems
+           
+           let totalForEligibleItems = numberOfPaidItems * itemPrice
+           
+           // Compute the total for non-eligible items.
+           let otherItems = items.filter { $0.name != itemName }
+           let totalForOtherItems = otherItems.reduce(0) { $0 + $1.price() }
+           
+           return totalForEligibleItems + totalForOtherItems
+       }
 }
+
     
     
     
@@ -83,6 +80,8 @@ class TwoForOne: PricingScheme {
         }
         
         func total() -> Int {
+            // Checks if a pricing scheme is set and applies it to calculate the total.
+            // If no scheme is set, it defaults to the subtotal.
             return pricingScheme?.apply(items: itemsList) ?? subTotal()
         }
         
@@ -93,14 +92,17 @@ class TwoForOne: PricingScheme {
         func output() -> String {
             var receiptOutput = "Receipt:\n"
             for item in itemsList {
+                // Format the price with two decimal places.
                 let price = String(format: "$%.2f", Double(item.price()) / 100.0)
-                receiptOutput += "\(item.name) (8oz Can): \(price)\n"
+                receiptOutput += "\(item.name): \(price)\n"
             }
             receiptOutput += "------------------\n"
-            let total = String(format: "$%.2f", Double(subTotal()) / 100.0)
+            // Use the `total()` method that checks for applied pricing schemes.
+            let total = String(format: "$%.2f", Double(self.total()) / 100.0)
             receiptOutput += "TOTAL: \(total)"
             return receiptOutput
         }
+
         
         func finalizeAndClear() -> Receipt {
             let clonedReceipt = Receipt()
@@ -127,6 +129,10 @@ class TwoForOne: PricingScheme {
         func total() -> Receipt {
             return receipt.finalizeAndClear()
         }
+        
+        func applyPricingScheme(_ scheme: PricingScheme) {
+               receipt.applyPricingScheme(scheme)
+           }
         
         
         
